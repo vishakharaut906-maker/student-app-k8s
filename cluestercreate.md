@@ -1,0 +1,524 @@
+# 🚀 Amazon EKS Cluster Setup from an EC2 Instance (Ubuntu)
+
+This guide explains how to create an **Amazon EKS (Elastic Kubernetes Service)** cluster from an **Ubuntu EC2 instance** using the latest versions of **AWS CLI**, **kubectl**, and **eksctl**.
+
+---
+
+# 📋 Prerequisites
+
+Before creating the EKS cluster, ensure you have the following:
+
+- ✅ AWS Account
+- ✅ Ubuntu EC2 Instance (22.04/24.04 Recommended)
+- ✅ Instance Type: `t3.medium` or higher
+- ✅ Internet Access (Public Subnet or NAT Gateway)
+- ✅ IAM Role attached to the EC2 instance
+- ✅ AWS CLI
+- ✅ kubectl
+- ✅ eksctl
+
+---
+
+# 📌 Step 1: Launch an EC2 Instance
+
+Create an Ubuntu EC2 instance with the following configuration:
+
+| Setting | Value |
+|----------|-------|
+| AMI | Ubuntu 22.04 / 24.04 |
+| Instance Type | t3.medium (Recommended) |
+| Network | Public Subnet |
+| Internet Access | Required |
+| Storage | 20 GB or more |
+
+---
+
+# 🔐 Step 2: Create and Attach an IAM Role
+
+The EC2 instance requires an IAM Role to create and manage EKS resources.
+
+## Option 1 (Recommended for Learning)
+
+Attach the following AWS Managed Policy:
+
+```
+AdministratorAccess
+```
+
+---
+
+## Option 2 (Minimum Required Policies)
+
+Attach these AWS Managed Policies:
+
+```
+AmazonEKSClusterPolicy
+AmazonEC2FullAccess
+AmazonVPCFullAccess
+IAMFullAccess
+CloudFormationFullAccess
+```
+
+> **Note:** For production environments, follow the principle of least privilege instead of using `AdministratorAccess`.
+
+---
+
+## Attach the IAM Role to the EC2 Instance
+
+1. Open the **AWS Console**
+2. Navigate to **EC2**
+3. Select your EC2 Instance
+4. Click:
+
+```
+Actions
+    → Security
+        → Modify IAM Role
+```
+
+5. Select your IAM Role
+6. Click **Update IAM Role**
+
+---
+
+# 🔄 Step 3: Update the EC2 Instance
+
+```bash
+sudo apt update && sudo apt upgrade -y
+```
+
+---
+
+# ☁️ Step 4: Install and Verify AWS CLI
+
+### Check whether AWS CLI is already installed
+
+```bash
+aws --version
+```
+
+If AWS CLI is not installed:
+
+```bash
+sudo apt install awscli -y
+```
+
+Verify again:
+
+```bash
+aws --version
+```
+
+---
+
+## Verify the IAM Role
+
+```bash
+aws sts get-caller-identity
+```
+
+Expected Output:
+
+```json
+{
+  "Account": "123456789012",
+  "Arn": "arn:aws:sts::123456789012:assumed-role/EC2-EKS-Role/i-xxxxxxxx"
+}
+```
+
+If you see your account details, the IAM role is working correctly.
+
+---
+
+## Configure AWS CLI 
+
+```bash
+aws configure
+```
+
+Enter:
+
+```
+AWS Access Key ID:
+AWS Secret Access Key:
+Default region name: ap-south-1
+Default output format: json
+```
+
+> If your EC2 instance already has an IAM Role attached, you do **not** need to run `aws configure`.
+
+---
+
+# ⚙️ Step 5: Install kubectl (Latest Stable Version)
+
+### Download the latest stable release
+
+```bash
+curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+```
+
+### Make it executable
+
+```bash
+chmod +x kubectl
+```
+
+### Move it to the system path
+
+```bash
+sudo mv kubectl /usr/local/bin/
+```
+
+### Verify Installation
+
+```bash
+kubectl version --client
+```
+
+---
+
+# ⚙️ Step 6: Install eksctl
+
+### Download the latest release
+
+```bash
+ARCH=amd64
+PLATFORM=$(uname -s)_${ARCH}
+
+curl -sLO "https://github.com/eksctl-io/eksctl/releases/latest/download/eksctl_${PLATFORM}.tar.gz"
+```
+
+### Extract the package
+
+```bash
+tar -xzf eksctl_${PLATFORM}.tar.gz
+```
+
+### Move it to the system path
+
+```bash
+sudo mv eksctl /usr/local/bin
+```
+
+### Verify Installation
+
+```bash
+eksctl version
+```
+
+---
+
+# 🌍 Step 7: Set the AWS Region
+
+If your EC2 instance and EKS cluster are in the same region, set the default region.
+
+Example:
+
+```bash
+export AWS_DEFAULT_REGION=ap-south-1
+```
+
+Verify:
+
+```bash
+echo $AWS_DEFAULT_REGION
+```
+
+> If your EC2 instance is in a different region than your EKS cluster, always specify the region using the `--region` option.
+
+Example:
+
+```bash
+eksctl get cluster --region ap-south-1
+```
+
+---
+
+# 🚀 Step 8: Create an Amazon EKS Cluster
+
+```bash
+eksctl create cluster \
+--name demo-cluster \
+--region ap-south-1 \
+--version 1.34 \
+--nodegroup-name workers \
+--node-type t3.medium \
+--nodes 2 \
+--nodes-min 2 \
+--nodes-max 3 \
+--managed
+```
+
+⏳ **Cluster creation takes approximately 15–20 minutes.**
+
+---
+
+# 🔍 Step 9: Verify the Cluster
+
+## List EKS Clusters
+
+```bash
+eksctl get cluster
+```
+
+---
+
+## Update kubeconfig
+
+```bash
+aws eks update-kubeconfig \
+--region ap-south-1 \
+--name demo-cluster
+```
+
+Expected Output:
+
+```
+Added new context arn:aws:eks:ap-south-1:xxxxxxxxxxxx:cluster/demo-cluster
+```
+
+---
+
+## Check Cluster Information
+
+```bash
+kubectl cluster-info
+```
+
+---
+
+## Check Worker Nodes
+
+```bash
+kubectl get nodes
+```
+
+---
+
+## Check All Pods
+
+```bash
+kubectl get pods -A
+```
+
+---
+
+# 🗑️ Step 10: Delete the EKS Cluster
+
+```bash
+eksctl delete cluster \
+--name demo-cluster \
+--region ap-south-1
+```
+
+---
+
+# 🛠️ Useful Commands
+
+### AWS CLI Version
+
+```bash
+aws --version
+```
+
+---
+
+### Check IAM Identity
+
+```bash
+aws sts get-caller-identity
+```
+
+---
+
+### kubectl Version
+
+```bash
+kubectl version --client
+```
+
+---
+
+### eksctl Version
+
+```bash
+eksctl version
+```
+
+---
+
+### List EKS Clusters
+
+```bash
+eksctl get cluster
+```
+
+---
+
+### List Kubernetes Nodes
+
+```bash
+kubectl get nodes
+```
+
+---
+
+### List All Pods
+
+```bash
+kubectl get pods -A
+```
+
+---
+
+### List All Resources
+
+```bash
+kubectl get all
+```
+
+---
+
+### List Namespaces
+
+```bash
+kubectl get namespaces
+```
+
+---
+
+# ✅ Checklist
+
+- ✅ AWS Account
+- ✅ Ubuntu EC2 Instance
+- ✅ IAM Role attached to EC2
+- ✅ Internet Connectivity
+- ✅ AWS CLI Installed
+- ✅ kubectl Installed
+- ✅ eksctl Installed
+- ✅ AWS Region Configured
+- ✅ EKS Cluster Created
+- ✅ kubeconfig Updated
+- ✅ Worker Nodes in **Ready** State
+
+---
+
+# 🎉 Congratulations!
+
+You have successfully created and verified an **Amazon EKS Cluster** from an **Ubuntu EC2 Instance** using the latest versions of **kubectl** and **eksctl**.
+
+
+
+
+
+# Install Minikube on Ubuntu (Docker Driver)
+
+## 1. Update the system
+
+```bash
+sudo apt update
+```
+
+---
+
+## 2. Install Docker
+
+```bash
+sudo apt install docker.io -y
+```
+
+Enable and start Docker:
+
+```bash
+sudo systemctl enable docker
+sudo systemctl start docker
+```
+
+Add your user to the Docker group:
+
+```bash
+sudo usermod -aG docker $USER
+newgrp docker
+```
+
+Verify Docker:
+
+```bash
+docker --version
+docker ps
+```
+
+---
+
+## 3. Install kubectl
+
+```bash
+curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+
+chmod +x kubectl
+
+sudo mv kubectl /usr/local/bin/
+```
+
+Verify:
+
+```bash
+kubectl version --client
+```
+
+---
+
+## 4. Install Minikube
+
+Download Minikube:
+
+```bash
+curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+```
+
+Install:
+
+```bash
+sudo install minikube-linux-amd64 /usr/local/bin/minikube
+```
+
+Verify:
+
+```bash
+minikube version
+```
+
+---
+
+## 5. Start Minikube
+
+```bash
+minikube start --driver=docker
+```
+
+---
+
+## 6. Verify the Installation
+
+Check Minikube status:
+
+```bash
+minikube status
+```
+
+Check the Kubernetes node:
+
+```bash
+kubectl get nodes
+```
+
+Expected output:
+
+```text
+NAME       STATUS   ROLES           AGE   VERSION
+minikube   Ready    control-plane   1m    v1.xx.x
+```
+
+---
+
+This installs **Docker**, **kubectl**, and **Minikube** on Ubuntu using the **Docker driver**.

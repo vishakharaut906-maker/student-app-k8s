@@ -1,0 +1,42 @@
+1. Open the crontab file
+crontab -e
+
+This opens your personal cron file in an editor.
+
+2. Cron Job Syntax
+* * * * * command_to_execute
+│ │ │ │ │
+│ │ │ │ └── Day of week (0-7) (0 or 7 = Sunday)
+│ │ │ └──── Month (1-12)
+│ │ └────── Day of month (1-31)
+│ └──────── Hour (0-23)
+└────────── Minute (0-59)
+
+-------------------------------------------------------
+-------------------------------------------------------
+3. Examples
+
+Run every minute
+* * * * * /home/user/script.sh
+
+Run every 5 minutes
+*/5 * * * * /home/user/script.sh
+
+Run every Sunday at 10:00 PM
+0 22 * * 0 /home/user/script.sh
+
+Run on the 1st day of every month at midnight
+0 0 1 * * /home/user/script.sh
+
+
+----------------------------------------------
+----------------------------------------------
+| Schedule                        | Cron Expression |
+| ------------------------------- | --------------- |
+| Every minute                    | `* * * * *`     |
+| Every 5 minutes                 | `*/5 * * * *`   |
+| Every hour                      | `0 * * * *`     |
+| Every day at midnight           | `0 0 * * *`     |
+| Every Monday at 9 AM            | `0 9 * * 1`     |
+| Every 15 minutes                | `*/15 * * * *`  |
+| Every month on the 1st at 12 AM | `0 0 1 * *`     |

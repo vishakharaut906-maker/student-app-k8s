@@ -1,0 +1,58 @@
+# Running MariaDB in Docker on an EC2 Server
+
+This guide explains how to run a MariaDB database inside a Docker container on an EC2 instance and connect it to a Spring Boot application.
+
+---
+
+# Step 1: Pull the MariaDB Image
+
+Download the latest MariaDB image from Docker Hub.
+
+```bash
+docker pull mariadb:11
+```
+
+---
+
+# Step 2: Run the MariaDB Container
+
+Create and start the MariaDB container.
+
+```bash
+docker run -d \
+  --name mariadb \
+  -e MARIADB_ROOT_PASSWORD=admin \
+  -e MARIADB_DATABASE=student_db \
+  -e MARIADB_USER=studentuser \
+  -e MARIADB_PASSWORD=test123 \
+  -p 3306:3306 \
+  --restart unless-stopped \
+  mariadb:11
+```
+
+### Explanation
+
+| Option | Description |
+|---------|-------------|
+| `-d` | Runs the container in the background (Detached Mode). |
+| `--name mariadb` | Assigns the container name `mariadb`. |
+| `MARIADB_ROOT_PASSWORD` | Sets the password for the root user. |
+| `MARIADB_DATABASE` | Automatically creates the `student_db` database. |
+| `MARIADB_USER` | Creates a new database user. |
+| `MARIADB_PASSWORD` | Sets the password for the new user. |
+| `-p 3306:3306` | Maps the host port 3306 to the container port 3306. |
+| `--restart unless-stopped` | Automatically restarts the container after a reboot unless it is manually stopped. |
+
+---
+
+# Step 3: Verify the Container
+
+List all running containers.
+
+```bash
+docker ps
+```
+
+### Example Output
+
+```text
